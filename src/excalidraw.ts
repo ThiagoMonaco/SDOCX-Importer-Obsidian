@@ -1,4 +1,4 @@
-import { App, TFile, WorkspaceLeaf } from "obsidian";
+import { App, TFile, View, WorkspaceLeaf } from "obsidian";
 import {
   type ConversionResult,
   type Scene,
@@ -59,10 +59,11 @@ export class DrawingWriter {
   async captureActive() {
     const error = this.dependencyError();
     if (error) throw new Error(error);
-    const view = this.app.workspace.activeLeaf?.view as DrawingView | undefined;
+    const view: DrawingView | null =
+      this.app.workspace.getActiveViewOfType(View);
     const file = view?.file,
       api = view?.excalidrawAPI;
-    if (!file || !api)
+    if (!view || !file || !api)
       throw new Error(
         "Open the linked drawing in Excalidraw before exporting.",
       );
@@ -377,12 +378,13 @@ export class DrawingWriter {
     } finally {
       try {
         const staged = this.file(stage);
-        if (staged) await this.app.vault.delete(staged);
+        if (staged) await this.app.fileManager.trashFile(staged);
         this.state.staging = this.state.staging.filter((p) => p !== stage);
         await this.save();
       } catch (error) {
         console.error("SDOCX staging cleanup failed", error);
-        if (!committed) throw error;
+        if (!committed)
+          throw error instanceof Error ? error : new Error(String(error));
       } finally {
         try {
           ea.destroy();
@@ -433,7 +435,7 @@ export class DrawingWriter {
       if (!/\/samsung-import-stage-[0-9a-f-]+\.excalidraw\.md$/.test(path))
         continue;
       const file = this.file(path);
-      if (file) await this.app.vault.delete(file);
+      if (file) await this.app.fileManager.trashFile(file);
       this.state.staging = this.state.staging.filter((p) => p !== path);
     }
     await this.save();

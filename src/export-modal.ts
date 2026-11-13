@@ -12,7 +12,7 @@ export class ExportModal extends Modal {
   }
   onOpen() {
     const el = this.contentEl;
-    el.createEl("h2", { text: "Export drawing back to SDOCX" });
+    this.setTitle("Export drawing back to SDOCX");
     el.createEl("p", {
       text: `Replace ${this.plan.source} with the current drawing. The original SDOCX will be backed up under the drawings folder in _backups.`,
     });

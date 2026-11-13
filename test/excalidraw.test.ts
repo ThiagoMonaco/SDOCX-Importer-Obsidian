@@ -67,7 +67,9 @@ function setup() {
   };
   const app = {
     vault,
+    fileManager: { trashFile: vault.delete },
     workspace: {
+      getActiveViewOfType: () => null,
       iterateAllLeaves: (fn: (l: WorkspaceLeaf) => void) => leaves.forEach(fn),
     },
     plugins: {
@@ -141,7 +143,7 @@ describe("Excalidraw publication", () => {
     };
     const leaf = { view } as unknown as WorkspaceLeaf;
     f.leaves.push(leaf);
-    Object.assign(f.app.workspace, { activeLeaf: leaf });
+    Object.assign(f.app.workspace, { getActiveViewOfType: () => leaf.view });
     const capture = await f.writer.captureActive();
     expect(view.forceSave).toHaveBeenCalled();
     expect(capture.scene.elements[0].text).toBe("Latest edit");
@@ -165,7 +167,7 @@ describe("Excalidraw publication", () => {
         },
       },
     } as unknown as WorkspaceLeaf;
-    Object.assign(f.app.workspace, { activeLeaf: leaf });
+    Object.assign(f.app.workspace, { getActiveViewOfType: () => leaf.view });
     await expect(f.writer.captureActive()).rejects.toThrow("Finish editing");
   });
   it("checks the tested API version", () => {

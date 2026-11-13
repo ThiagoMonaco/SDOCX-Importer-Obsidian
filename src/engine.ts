@@ -6,7 +6,7 @@ import {
   hash,
   readSdocxIdentity,
 } from "@sdocx-importer/converter";
-import { ImportRecord, State } from "./state";
+import type { State } from "./state";
 import { readSourceLink, sourceRevision } from "./source-link";
 export type Decision = "replace" | "version" | "skip";
 export function sourceKey(path: string) {
@@ -19,12 +19,10 @@ export const drawingTitle = (path: string) =>
     .replace(/\.excalidraw(?:\.md)?$/i, "")
     .trim();
 export function fileTitle(title: string) {
-  return Array.from(
-    title
-      .replace(/[\\/:*?"<>|#^\[\]\x00-\x1f]/g, "_")
-      .replace(/^\.+|[. ]+$/g, "")
-      .trim(),
-  )
+  const safe = Array.from(title, (char) =>
+    char.charCodeAt(0) < 32 || '\\/:*?"<>|#^[]'.includes(char) ? "_" : char,
+  ).join("");
+  return Array.from(safe.replace(/^\.+|[. ]+$/g, "").trim())
     .slice(0, 60)
     .join("");
 }
@@ -61,7 +59,7 @@ interface Job {
   retry?: boolean;
 }
 export class ImportEngine {
-  private timers = new Map<string, ReturnType<typeof setTimeout>>();
+  private timers = new Map<string, number>();
   private queue = new Map<string, Job>();
   private running?: Promise<void>;
   private active?: Job;
@@ -88,10 +86,10 @@ export class ImportEngine {
   schedule(path: string) {
     if (!this.accepts(path) || this.state.paused || this.stopped) return;
     const previous = this.timers.get(path);
-    if (previous) clearTimeout(previous);
+    if (previous) window.clearTimeout(previous);
     this.timers.set(
       path,
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.timers.delete(path);
         this.enqueue({ path });
       }, 500),
@@ -189,7 +187,7 @@ export class ImportEngine {
     return next;
   }
   async persist() {
-    const snapshot: State = JSON.parse(JSON.stringify(this.state));
+    const snapshot = structuredClone(this.state);
     const next = this.saves
       .catch(() => {})
       .then(() => this.host.save(snapshot));
@@ -200,7 +198,7 @@ export class ImportEngine {
   async setPaused(paused: boolean) {
     this.state.paused = paused;
     if (paused) {
-      for (const timer of this.timers.values()) clearTimeout(timer);
+      for (const timer of this.timers.values()) window.clearTimeout(timer);
       this.timers.clear();
       this.queue.clear();
       this.controller?.abort();
@@ -211,7 +209,7 @@ export class ImportEngine {
   stop() {
     this.stopped = true;
     this.controller?.abort();
-    for (const timer of this.timers.values()) clearTimeout(timer);
+    for (const timer of this.timers.values()) window.clearTimeout(timer);
     this.timers.clear();
     this.queue.clear();
   }

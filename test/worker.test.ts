@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { Worker as NodeWorker } from "node:worker_threads";
 import { build } from "esbuild";
 import { convertSdocx, type ConversionResult } from "@sdocx-importer/converter";
 import { runConversion } from "../src/runner";
 import { syntheticNote, syntheticMembers } from "./synthetic";
 import { zipSync } from "fflate";
+beforeEach(() => vi.stubGlobal("window", { setTimeout, clearTimeout }));
 afterEach(() => vi.unstubAllGlobals());
 describe("complete portable conversion", () => {
   it("converts a synthetic note without personal fixtures or Go", async () => {
@@ -46,7 +47,7 @@ describe("complete portable conversion", () => {
       target: "es2020",
     });
     const bridge =
-      "const {parentPort}=require('node:worker_threads');globalThis.postMessage=m=>parentPort.postMessage(m);parentPort.on('message',data=>globalThis.onmessage({data}));\n";
+      "const {parentPort}=require('node:worker_threads');globalThis.self=globalThis;globalThis.postMessage=m=>parentPort.postMessage(m);parentPort.on('message',data=>globalThis.onmessage({data}));\n";
     const worker = new NodeWorker(bridge + bundle.outputFiles[0].text, {
         eval: true,
       }),

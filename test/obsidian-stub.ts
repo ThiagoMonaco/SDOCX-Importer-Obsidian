@@ -8,3 +8,5 @@ export class TFile {
 export class TFolder {
   constructor(public children: (TFile | TFolder)[] = []) {}
 }
+
+export class View {}

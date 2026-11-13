@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImportEngine, ImportHost, sourceKey } from "../src/engine";
 import {
   hash,
@@ -77,7 +77,16 @@ function fixture(saved?: State) {
     dependency: (s: string | null) => (dependency = s),
   };
 }
-afterEach(() => vi.useRealTimers());
+beforeEach(() => {
+  vi.stubGlobal("window", {
+    setTimeout: (...args: Parameters<typeof setTimeout>) => setTimeout(...args),
+    clearTimeout: (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer),
+  });
+});
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 describe("watched imports", () => {
   it("waits for the old source path to disappear before adopting a renamed peer file", async () => {
     const f = fixture();

@@ -1,4 +1,10 @@
-import { App, Modal, PluginSettingTab, Setting } from "obsidian";
+import {
+  App,
+  Modal,
+  PluginSettingTab,
+  Setting,
+  type SettingDefinitionRender,
+} from "obsidian";
 import type SDOCXImporter from "./main";
 export class StatusModal extends Modal {
   private progressEl?: HTMLElement;
@@ -29,7 +35,7 @@ export class StatusModal extends Modal {
   render() {
     const el = this.contentEl;
     el.empty();
-    el.createEl("h2", { text: "SDOCX imports" });
+    this.setTitle("SDOCX imports");
     this.progressEl = el.createEl("p");
     this.updateProgress();
     new Setting(el)
@@ -56,7 +62,7 @@ export class StatusModal extends Modal {
       });
     for (const record of records) {
       const row = el.createDiv({ cls: "sdocx-importer-record" });
-      row.createEl("h3", { text: record.source });
+      new Setting(row).setName(record.source).setHeading();
       row.createEl("p", {
         text:
           record.status +
@@ -122,85 +128,125 @@ export class ImporterSettings extends PluginSettingTab {
   display() {
     const el = this.containerEl;
     el.empty();
-    el.createEl("h2", { text: "SDOCX Importer" });
-    el.createEl("p", {
-      text: "Requires Excalidraw 2.29.1 or newer. All conversion runs on your device. Source files are retained.",
-    });
+    for (const definition of this.getSettingDefinitions()) {
+      const row = new Setting(el)
+        .setName(definition.name)
+        .setDesc(definition.desc ?? "");
+      definition.render(row);
+    }
+  }
+
+  getSettingDefinitions(): (Omit<SettingDefinitionRender, "render"> & {
+    render(row: Setting): void;
+  })[] {
     const draft = { ...this.importer.state.settings };
-    new Setting(el)
-      .setName("Source folder")
-      .setDesc("Watch this vault folder and its subfolders for SDOCX files.")
-      .addText((t) =>
-        t
-          .setValue(draft.sourceFolder)
-          .onChange((v) => (draft.sourceFolder = v)),
-      );
-    new Setting(el)
-      .setName("Output folder")
-      .setDesc(
-        "Drawings mirror source subfolders. Embedded images go in _assets.",
-      )
-      .addText((t) =>
-        t
-          .setValue(draft.outputFolder)
-          .onChange((v) => (draft.outputFolder = v)),
-      );
-    new Setting(el)
-      .setName("Automatically replace changed imports")
-      .setDesc(
-        "Off: queue changed sources for review. On: future source changes replace the linked drawing, including your edits. Existing review items remain queued.",
-      )
-      .addToggle((t) =>
-        t.setValue(draft.autoReplace).onChange((v) => (draft.autoReplace = v)),
-      );
-    new Setting(el)
-      .setName("Export drawing edits automatically")
-      .setDesc(
-        "After a linked drawing is saved, back up and update its SDOCX. Export stops if the Samsung Notes file changed independently. Enable on the device where you edit drawings.",
-      )
-      .addToggle((t) =>
-        t.setValue(draft.autoExport).onChange((v) => (draft.autoExport = v)),
-      );
-    new Setting(el)
-      .setName("Stroke scale")
-      .setDesc("Positive pen-width multiplier. Default: 1.")
-      .addText((t) =>
-        t
-          .setValue(String(draft.strokeScale))
-          .onChange((v) => (draft.strokeScale = Number(v))),
-      );
-    new Setting(el)
-      .setName("Body text line height")
-      .setDesc("Positive line advance in em. Default: 1.9.")
-      .addText((t) =>
-        t
-          .setValue(String(draft.textLineHeight))
-          .onChange((v) => (draft.textLineHeight = Number(v))),
-      );
-    new Setting(el)
-      .setName("Page frames")
-      .setDesc("Include named frames around source pages.")
-      .addToggle((t) =>
-        t.setValue(draft.pageFrames).onChange((v) => (draft.pageFrames = v)),
-      );
-    const message = el.createEl("p");
-    new Setting(el).addButton((b) =>
-      b
-        .setButtonText("Save settings")
-        .setCta()
-        .onClick(async () => {
-          b.setDisabled(true);
-          try {
-            await this.importer.updateSettings(draft);
-            message.setText("Settings saved.");
-          } catch (error) {
-            message.setText(
-              error instanceof Error ? error.message : String(error),
-            );
-          } finally {
-            b.setDisabled(false);
-          }
-        }),
-    );
+    return [
+      {
+        name: "SDOCX Importer",
+        desc: "Requires Excalidraw 2.29.1 or newer. Conversion runs on your device.",
+        render: (row) => {
+          row.setHeading();
+        },
+      },
+      {
+        name: "Source folder",
+        desc: "Watch this vault folder and its subfolders for SDOCX files.",
+        render: (row) => {
+          row.addText((text) =>
+            text.setValue(draft.sourceFolder).onChange((value) => {
+              draft.sourceFolder = value;
+            }),
+          );
+        },
+      },
+      {
+        name: "Output folder",
+        desc: "Drawings mirror source subfolders. Embedded images go in _assets.",
+        render: (row) => {
+          row.addText((text) =>
+            text.setValue(draft.outputFolder).onChange((value) => {
+              draft.outputFolder = value;
+            }),
+          );
+        },
+      },
+      {
+        name: "Automatically replace changed imports",
+        desc: "Off: queue changed sources for review. On: future source changes replace the linked drawing, including your edits. Existing review items remain queued.",
+        render: (row) => {
+          row.addToggle((toggle) =>
+            toggle.setValue(draft.autoReplace).onChange((value) => {
+              draft.autoReplace = value;
+            }),
+          );
+        },
+      },
+      {
+        name: "Export drawing edits automatically",
+        desc: "After a linked drawing is saved, back up and update its SDOCX. Export stops if the Samsung Notes file changed independently. Enable on the device where you edit drawings.",
+        render: (row) => {
+          row.addToggle((toggle) =>
+            toggle.setValue(draft.autoExport).onChange((value) => {
+              draft.autoExport = value;
+            }),
+          );
+        },
+      },
+      {
+        name: "Stroke scale",
+        desc: "Positive pen-width multiplier. Default: 1.",
+        render: (row) => {
+          row.addText((text) =>
+            text.setValue(String(draft.strokeScale)).onChange((value) => {
+              draft.strokeScale = Number(value);
+            }),
+          );
+        },
+      },
+      {
+        name: "Body text line height",
+        desc: "Positive line advance in em. Default: 1.9.",
+        render: (row) => {
+          row.addText((text) =>
+            text.setValue(String(draft.textLineHeight)).onChange((value) => {
+              draft.textLineHeight = Number(value);
+            }),
+          );
+        },
+      },
+      {
+        name: "Page frames",
+        desc: "Include named frames around source pages.",
+        render: (row) => {
+          row.addToggle((toggle) =>
+            toggle.setValue(draft.pageFrames).onChange((value) => {
+              draft.pageFrames = value;
+            }),
+          );
+        },
+      },
+      {
+        name: "Save settings",
+        render: (row) => {
+          row.addButton((button) =>
+            button
+              .setButtonText("Save settings")
+              .setCta()
+              .onClick(() => {
+                button.setDisabled(true);
+                void this.importer
+                  .updateSettings(draft)
+                  .then(() => row.setDesc("Settings saved."))
+                  .catch((error: unknown) => {
+                    row.setDesc(
+                      error instanceof Error ? error.message : String(error),
+                    );
+                  })
+                  .finally(() => button.setDisabled(false));
+              }),
+          );
+        },
+      },
+    ];
   }
 }

@@ -74,7 +74,8 @@ export function folderPath(value: string) {
   if (
     !path ||
     path.split("/").some((p) => p === "." || p === ".." || p.startsWith(".")) ||
-    /[:*?"<>|\x00-\x1f]/.test(path)
+    /[:*?"<>|]/.test(path) ||
+    Array.from(path).some((char) => char.charCodeAt(0) < 32)
   )
     throw new Error(
       "Use a nonempty vault folder without hidden or relative path segments.",

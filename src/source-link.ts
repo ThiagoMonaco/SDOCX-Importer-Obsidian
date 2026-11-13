@@ -1,5 +1,5 @@
 import { hash } from "@sdocx-importer/converter";
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2";
 import { bytesToHex } from "@noble/hashes/utils";
 
 const encoder = new TextEncoder();

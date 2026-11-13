@@ -4,6 +4,8 @@ import {
   type ConversionOptions,
   type ConversionResult,
 } from "@sdocx-importer/converter";
+import type { WorkerMessage } from "./worker";
+
 declare const CONVERTER_WORKER: string;
 /** Dedicated worker per conversion; terminating it cancels even synchronous parsing. */
 export async function runConversion(
@@ -28,24 +30,30 @@ export async function runConversion(
   let ready = false;
   try {
     return await new Promise<ConversionResult>((resolve, reject) => {
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         if (!ready) finish(new Error("Worker startup unavailable"));
       }, 2000);
-      const aborted = () =>
+      const aborted = () => {
+        const reason: unknown = options.signal?.reason;
         finish(
-          options.signal?.reason ?? new DOMException("Aborted", "AbortError"),
+          reason instanceof Error
+            ? reason
+            : new DOMException(
+                reason === undefined ? "Aborted" : String(reason),
+                "AbortError",
+              ),
         );
+      };
       const cleanup = () => {
-        clearTimeout(timer);
+        window.clearTimeout(timer);
         options.signal?.removeEventListener("abort", aborted);
         worker.onmessage = null;
         worker.onerror = null;
         worker.onmessageerror = null;
       };
-      const finish = (error?: unknown, result?: ConversionResult) => {
+      const finish = (error: Error) => {
         cleanup();
-        if (error) reject(error);
-        else resolve(result!);
+        reject(error);
       };
       options.signal?.addEventListener("abort", aborted, { once: true });
       worker.onerror = (event) => {
@@ -54,11 +62,11 @@ export async function runConversion(
       };
       worker.onmessageerror = () =>
         finish(new Error("Unable to receive conversion result"));
-      worker.onmessage = ({ data }) => {
+      worker.onmessage = ({ data }: MessageEvent<WorkerMessage>) => {
         try {
           if (data.type === "ready") {
             ready = true;
-            clearTimeout(timer);
+            window.clearTimeout(timer);
             const copy =
               bytes instanceof Uint8Array
                 ? bytes.slice().buffer
@@ -77,15 +85,18 @@ export async function runConversion(
           } else if (data.type === "progress")
             options.onProgress?.(data.progress);
           else if (data.type === "error") finish(new Error(data.error));
-          else if (data.type === "result") finish(undefined, data.result);
+          else if (data.type === "result") {
+            cleanup();
+            resolve(data.result);
+          }
         } catch (error) {
-          finish(error);
+          finish(error instanceof Error ? error : new Error(String(error)));
         }
       };
       if (options.signal?.aborted) aborted();
     });
   } catch (error) {
-    checkAbort(options.signal);
+    if (options.signal?.aborted) throw error;
     if (!ready) return convertSdocx(bytes, options);
     throw error;
   } finally {

@@ -1,28 +1,39 @@
 import {
   convertSdocx,
   type ConversionOptions,
+  type ConversionResult,
+  type Progress,
 } from "@sdocx-importer/converter";
-const scope = globalThis as unknown as {
-  postMessage(message: unknown): void;
-  onmessage:
-    | ((
-        event: MessageEvent<{ bytes: ArrayBuffer; options: ConversionOptions }>,
-      ) => void)
-    | null;
+
+type WorkerRequest = {
+  bytes: ArrayBuffer;
+  options: Pick<
+    ConversionOptions,
+    "strokeScale" | "textLineHeight" | "pageFrames"
+  >;
 };
-scope.onmessage = async ({ data }) => {
-  try {
-    const result = await convertSdocx(data.bytes, {
-      ...data.options,
-      onProgress: (progress) =>
-        scope.postMessage({ type: "progress", progress }),
+
+export type WorkerMessage =
+  | { type: "ready" }
+  | { type: "progress"; progress: Progress }
+  | { type: "result"; result: ConversionResult }
+  | { type: "error"; error: string };
+
+function post(message: WorkerMessage): void {
+  self.postMessage(message);
+}
+
+self.onmessage = ({ data }: MessageEvent<WorkerRequest>) => {
+  void convertSdocx(data.bytes, {
+    ...data.options,
+    onProgress: (progress) => post({ type: "progress", progress }),
+  })
+    .then((result) => post({ type: "result", result }))
+    .catch((error: unknown) => {
+      post({
+        type: "error",
+        error: error instanceof Error ? error.message : String(error),
+      });
     });
-    scope.postMessage({ type: "result", result });
-  } catch (error) {
-    scope.postMessage({
-      type: "error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
 };
-scope.postMessage({ type: "ready" });
+post({ type: "ready" });

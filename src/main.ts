@@ -1,4 +1,4 @@
-import { Plugin, Notice, TFile, TAbstractFile } from "obsidian";
+import { Plugin, Notice, TFile, TAbstractFile, View } from "obsidian";
 import { drawingTitle, ImportEngine, sourceKey } from "./engine";
 import { discoverSources } from "./inbox";
 import { findLinkedDrawing } from "./drawing-discovery";
@@ -144,8 +144,8 @@ export default class SDOCXImporter extends Plugin {
       id: "preview-samsung-dark-colors",
       name: "Preview drawing with Samsung dark-mode colors",
       checkCallback: (checking) => {
-        const view = this.app.workspace.activeLeaf?.view as
-          | (NonNullable<typeof this.app.workspace.activeLeaf>["view"] & {
+        const view:
+          | (View & {
               getScene?: () => Scene | null;
               svg?: (
                 scene: Scene,
@@ -153,7 +153,7 @@ export default class SDOCXImporter extends Plugin {
                 embedScene: false,
               ) => Promise<SVGSVGElement>;
             })
-          | undefined;
+          | null = this.app.workspace.getActiveViewOfType(View);
         if (view?.getViewType() !== "excalidraw" || !view.getScene || !view.svg)
           return false;
         if (!checking) {
