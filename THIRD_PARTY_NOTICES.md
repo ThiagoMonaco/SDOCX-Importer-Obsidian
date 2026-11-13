@@ -2,7 +2,7 @@
 
 The plugin bundles the following MIT-licensed libraries. Excalidraw is accessed through its installed runtime API and is not bundled.
 
-## fflate 0.8.2
+## fflate 0.8.3
 
 MIT License
 

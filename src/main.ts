@@ -1,6 +1,7 @@
 import { Plugin, Notice, TFile, TAbstractFile } from "obsidian";
 import { drawingTitle, ImportEngine, sourceKey } from "./engine";
 import { discoverSources } from "./inbox";
+import { findLinkedDrawing } from "./drawing-discovery";
 import { DrawingWriter } from "./excalidraw";
 import { runConversion } from "./runner";
 import { State, validateSettings } from "./state";
@@ -72,20 +73,15 @@ export default class SDOCXImporter extends Plugin {
           }
         },
         sourceExists: (path) => this.app.vault.adapter.exists(path),
-        findDrawing: async (source, key) => {
-          const prefix = (key ?? sourceKey(source)) + ":";
-          const matches = this.app.vault
-            .getMarkdownFiles()
-            .filter((file) =>
-              String(
-                this.app.metadataCache.getFileCache(file)?.frontmatter?.[
-                  "sdocx-import-source"
-                ] ?? "",
-              ).startsWith(prefix),
-            );
-          if (matches.length === 1) return matches[0].path;
-          return undefined;
-        },
+        findDrawing: async (source, key) =>
+          findLinkedDrawing(
+            this.app.vault.getFolderByPath(this.state.settings.outputFolder),
+            key ?? sourceKey(source),
+            (file) =>
+              this.app.metadataCache.getFileCache(file)?.frontmatter?.[
+                "sdocx-import-source"
+              ],
+          ),
         save: (state) =>
           saveDeviceState(this.app, state, (s) => this.saveData(s)),
         notice: (message) => {

@@ -1,7 +1,7 @@
 {
   "id": "samsung-notes-importer",
   "name": "SDOCX Importer",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "minAppVersion": "1.8.7",
   "description": "Convert between SDOCX files and editable Excalidraw drawings, entirely on your device.",
   "author": "SDOCX Importer",
