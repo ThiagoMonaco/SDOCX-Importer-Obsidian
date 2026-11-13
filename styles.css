@@ -1,0 +1,31 @@
+.sdocx-importer-status {
+  cursor: pointer;
+}
+.sdocx-importer-modal {
+  width: min(900px, 95vw);
+}
+.sdocx-importer-record {
+  border-top: 1px solid var(--background-modifier-border);
+  padding-block: var(--size-4-3);
+  overflow-wrap: anywhere;
+}
+.sdocx-importer-record h3 {
+  margin-block: var(--size-4-2);
+}
+.sdocx-importer-error {
+  color: var(--text-error);
+}
+.sdocx-importer-record .setting-item {
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+.sdocx-importer-record .setting-item-control {
+  flex-wrap: wrap;
+}
+.sdocx-dark-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 75vh;
+  margin-inline: auto;
+  background: #030303;
+}

@@ -1,0 +1,29 @@
+{
+  "name": "samsung-notes-importer",
+  "version": "0.2.8",
+  "private": true,
+  "description": "Local SDOCX importer for Obsidian Excalidraw",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "node scripts/build.mjs",
+    "package": "npm run check && npm run test && npm run build && node scripts/package.mjs",
+    "format": "prettier --write src test scripts *.json *.ts *.md",
+    "format:check": "prettier --check src test scripts *.json *.ts *.md"
+  },
+  "dependencies": {
+    "@noble/hashes": "1.8.0",
+    "@sdocx-importer/converter": "file:deps/converter/typescript",
+    "fflate": "0.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "esbuild": "0.25.5",
+    "obsidian": "1.8.7",
+    "prettier": "3.5.3",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  }
+}

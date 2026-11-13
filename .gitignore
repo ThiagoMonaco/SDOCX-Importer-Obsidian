@@ -1,0 +1,15 @@
+node_modules/
+dist/
+release/
+coverage/
+.DS_Store
+*.sdocx
+*.excalidraw
+.env
+.env.*
+*.apk
+*.idsig
+*.aar
+*.keystore
+*.jks
+*.p12
